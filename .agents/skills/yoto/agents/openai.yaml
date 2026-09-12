@@ -1,0 +1,4 @@
+interface:
+  display_name: "Yoto MYO"
+  short_description: "Manage Yoto MYO audio, cards, and icons"
+  default_prompt: "Use $yoto to inspect or update my Yoto MYO playlist safely."

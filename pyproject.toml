@@ -1,0 +1,20 @@
+[project]
+name = "yoto-cli"
+version = "0.2.0"
+description = "Agent-ready Yoto Make Your Own CLI wrapper and workflows"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["Pillow>=10"]
+
+[project.scripts]
+yoto-cli = "scripts.yoto_cli:main"
+yoto-upload-manifest = "scripts.upload_audio_manifest:main"
+yoto-apply-icons = "scripts.apply_icon_manifest:main"
+yoto-validate-icon = "scripts.validate_yoto_icon:main"
+
+[tool.setuptools]
+packages = ["scripts"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
