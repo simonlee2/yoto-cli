@@ -1,18 +1,50 @@
-# yoto-cli
+# Yoto playlist tools
 
-Agent-ready tooling for user-owned Yoto Make Your Own playlists.
+Browse and manage your own Yoto Make Your Own playlists from an assistant or the
+command line. Use the hosted MCP connector for playlist edits without installing
+the CLI; use the CLI for local audio uploads and icon workflows.
 
-The repository contains two layers:
+## Connect your assistant
 
-- `.agents/skills/yoto/` — the canonical repository skill for Codex and other
-  Agent Skills-compatible clients.
-- `scripts/` — deterministic commands for Yoto operations, manifest uploads,
-  icon assignments, and icon validation.
+Add this MCP server URL to your assistant:
 
-The repository includes reusable tools and generic workflow instructions. Keep
-personal playlists, manifests, audio files, and account credentials outside it.
+```text
+https://yoto-connector.dev-simonlee.workers.dev/mcp
+```
 
-## Install
+In [ChatGPT Plugins](https://chatgpt.com/plugins), add a connection using this URL
+and sign in with Yoto. For an existing connection, choose **Refresh** to discover
+updated tools, then start a new conversation with Yoto enabled. Refreshing tools
+and authorizing additional permissions are separate actions.
+
+Reading requires read access. To edit playlists, ask the assistant to prepare a
+change and complete the management authorization prompt. The consent page should
+say **read and manage**. Existing read-only connections are not upgraded silently.
+You sign in on Yoto's site; never share passwords, tokens or callback URLs in chat.
+
+See the [connector guide](server/README.md) for setup, tools and permissions.
+
+## Use the connector
+
+Examples:
+
+- “List my MYO playlists.”
+- “Show the chapters in this playlist.”
+- “Prepare a new title for this playlist; show me the preview before applying.”
+- “Preview moving this chapter to the start.”
+
+The connector can create empty playlists, edit titles/descriptions, add and rename
+chapters, rename tracks, reorder chapters/tracks, set existing Yoto icons, copy
+supported audio tracks between your own playlists, and remove individual tracks.
+Changes use **prepare → review → confirm → apply**. Previews expire after ten
+minutes. If a change reports an uncertain outcome, read the playlist before
+preparing another change.
+
+Hosted audio and custom-icon uploads are disabled. Use the CLI below for uploads.
+The connector does not delete whole playlists, control players, or provide
+commercial-card audio. Physical MYO-card linking stays in the Yoto app.
+
+## Install the CLI
 
 Requires Python 3.9+, Node.js with `npx`, and Git.
 
@@ -45,7 +77,7 @@ yoto-cli --help
 yoto-cli --json doctor
 ```
 
-## Authentication
+## CLI authentication
 
 Create a public/native client at `https://dashboard.yoto.dev/` with this exact
 redirect URI:
@@ -65,7 +97,7 @@ The public client ID can come from `YOTO_CLIENT_ID` or the upstream CLI's local
 outside repositories, restrict it with `chmod 600`, and never paste its
 contents or an OAuth callback URL into chat or a shell command.
 
-## Common operations
+## CLI usage
 
 ```bash
 # Check configuration and authentication
@@ -102,17 +134,17 @@ bare media ID and adds the prefix.
 The standalone icon examples in `scripts/make_yoto_icon.py` and
 `scripts/make_radish_icon.py` write to `generated-icons/` in the current directory.
 
-## Repository boundaries
+## Credentials and disconnecting
 
-Keep these outside git:
+If the CLI asks you to sign in, run `yoto-cli login`. After an interrupted upload
+or playlist change, inspect the playlist before trying the operation again.
 
-- downloaded audio or video
-- OAuth callbacks, access tokens, refresh tokens, and client secrets
-- `~/.yoto-cli/config.json`
-- generated archives and other large media bundles
+For the hosted connector, ask the assistant to disconnect Yoto to delete that
+connection's saved credentials, then remove the connection from the assistant.
+Other connections are separate. Removing the assistant connection alone does not
+immediately delete saved Yoto credentials; unused credentials expire after 30 days
+without a successful playlist read. See the [privacy page](https://yoto-connector.dev-simonlee.workers.dev/privacy).
 
-Run the test suite with:
-
-```bash
-python3 -m unittest discover -s tests -v
-```
+Keep credentials, personal manifests and downloaded audio outside this repository.
+The [Yoto agent skill](.agents/skills/yoto/SKILL.md) provides reusable workflows
+for compatible coding assistants.
