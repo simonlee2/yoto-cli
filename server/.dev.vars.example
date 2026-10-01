@@ -1,0 +1,6 @@
+# Use a dedicated development Yoto app with this callback registered:
+# http://localhost:8787/oauth/yoto/callback
+PUBLIC_ORIGIN=http://localhost:8787
+YOTO_CLIENT_ID=your-public-yoto-client-id
+# Generate: openssl rand -base64 32
+TOKEN_ENCRYPTION_KEY=replace-with-a-base64-encoded-32-byte-key

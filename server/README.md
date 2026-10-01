@@ -78,3 +78,5 @@ settings. This deletes the connector's saved credentials for that connection;
 it does not disconnect other assistants or revoke Yoto's app authorization.
 Unused credentials expire after 30 days without a successful playlist read.
 Operations already in progress may finish. See the [privacy page](https://yoto-connector.dev-simonlee.workers.dev/privacy).
+
+For your own deployment, see the [self-hosting guide](SETUP.md).

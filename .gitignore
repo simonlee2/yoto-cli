@@ -22,3 +22,7 @@ build/
 dist/
 generated-icons/
 manifests/
+.dev.vars*
+!.dev.vars.example
+.wrangler/
+coverage/

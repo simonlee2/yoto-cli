@@ -1,0 +1,100 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "yoto-connector",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-22",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "PUBLIC_ORIGIN": "https://your-yoto-connector.example.com",
+    "YOTO_CLIENT_ID": "replace-with-your-public-client-id",
+    "ENROLLMENT_ENABLED": "false",
+    "WRITES_ENABLED": "false",
+    "UPLOADS_ENABLED": "false"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "AUTH_FLOWS",
+        "class_name": "AuthFlow"
+      },
+      {
+        "name": "YOTO_CONNECTIONS",
+        "class_name": "YotoConnection"
+      },
+      {
+        "name": "MYO_WRITES",
+        "class_name": "MyoWrites"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "AuthFlow",
+        "YotoConnection"
+      ]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": [
+        "MyoWrites"
+      ]
+    }
+  ],
+  "observability": {
+    "logs": {
+      "enabled": false,
+      "invocation_logs": false
+    },
+    "traces": {
+      "enabled": false
+    },
+    "enabled": false
+  },
+  "ratelimits": [
+    {
+      "name": "EDGE_LIMITER",
+      "namespace_id": "21001",
+      "simple": {
+        "limit": 300,
+        "period": 60
+      }
+    },
+    {
+      "name": "AUTH_LIMITER",
+      "namespace_id": "21002",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    },
+    {
+      "name": "MCP_LIMITER",
+      "namespace_id": "21003",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    },
+    {
+      "name": "CONNECTION_LIMITER",
+      "namespace_id": "21004",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    }
+  ]
+}

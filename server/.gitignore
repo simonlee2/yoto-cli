@@ -1,0 +1,7 @@
+# Generated from wrangler.jsonc by npm run types.
+worker-configuration.d.ts
+
+# Operator-specific resources and private development history.
+wrangler.local.jsonc
+DEPLOYMENT.md
+MANAGEMENT.md
