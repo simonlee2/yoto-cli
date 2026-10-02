@@ -251,7 +251,10 @@ export class YotoConnection extends DurableObject<AppEnv> {
     this.ctx.storage.kv.put("refreshing", true);
     await this.ctx.storage.sync();
     try {
-      tokens = await exchangeTokens({ grant_type: "refresh_token", client_id: this.env.YOTO_CLIENT_ID, refresh_token: tokens.refreshToken });
+      const refreshed = await exchangeTokens({ grant_type: "refresh_token", client_id: this.env.YOTO_CLIENT_ID, refresh_token: tokens.refreshToken });
+      // An omitted refresh scope means unchanged. Explicit scopes, including an
+      // empty or reduced grant, replace the previous permissions (never union).
+      tokens = { ...refreshed, scopes: refreshed.scopes === undefined ? tokens.scopes : refreshed.scopes };
       this.ctx.storage.kv.put("tokens", await seal(tokens, this.env.TOKEN_ENCRYPTION_KEY));
       this.ctx.storage.kv.delete("refreshing");
       return tokens.accessToken;
