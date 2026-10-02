@@ -449,6 +449,43 @@ describe("per-connection credentials", () => {
     expect(refreshes).toBe(2);
   });
 
+  it.each([
+    { name: "omitted", response: {}, expected: ["user:content:view", "user:content:manage"] },
+    { name: "reduced", response: { scope: "user:content:view" }, expected: ["user:content:view"] },
+    { name: "empty", response: { scope: "" }, expected: [""] }
+  ])("retains $name refresh scope semantics across rotations and restart", async ({ response, expected }) => {
+    const owner = randomId();
+    let connection = env.YOTO_CONNECTIONS.getByName(owner);
+    await connection.initialize({ ...validTokens(), expiresAt: 0, scopes: ["user:content:view", "user:content:manage"] });
+    let refreshes = 0;
+    outbound.mockImplementation(async (input, init) => {
+      if (String(input).endsWith("/oauth/token")) {
+        expect(new URLSearchParams(init!.body as string).get("refresh_token")).toBe(refreshes === 0 ? "test-refresh" : `refresh-${refreshes}`);
+        refreshes++;
+        return Response.json({ access_token: `access-${refreshes}`, refresh_token: `refresh-${refreshes}`, expires_in: 3600, ...(refreshes === 1 ? response : {}) });
+      }
+      return Response.json({ cards: [] });
+    });
+    for (let rotation = 0; rotation < 3; rotation++) {
+      await connection.list();
+      expect(await connection.managementPermission()).toBe(expected.includes("user:content:manage"));
+      if (expected.includes("user:content:manage")) {
+        expect(await connection.prepareChange(owner, { kind: "create", title: "Synthetic preview" })).toHaveProperty("changeId");
+      } else {
+        await expectRejected(() => connection.prepareChange(owner, { kind: "create", title: "Synthetic preview" }));
+      }
+      await runInDurableObject(connection, async (_object, state) => {
+        const tokens = await unseal<Record<string, unknown>>(state.storage.kv.get<string>("tokens")!, env.TOKEN_ENCRYPTION_KEY);
+        expect(tokens.scopes).toEqual(expected);
+        state.storage.kv.put("tokens", await seal({ ...tokens, expiresAt: 0 }, env.TOKEN_ENCRYPTION_KEY));
+      });
+      const id = connection.id;
+      await abortAllDurableObjects();
+      connection = env.YOTO_CONNECTIONS.get(id);
+    }
+    expect(refreshes).toBe(3);
+  });
+
   it("uses each connection's own upstream identity and blocks a foreign playlist before detail fetch", async () => {
     const a = env.YOTO_CONNECTIONS.getByName(randomId()), b = env.YOTO_CONNECTIONS.getByName(randomId());
     await a.initialize({ ...validTokens(), accessToken: "identity-a" });
