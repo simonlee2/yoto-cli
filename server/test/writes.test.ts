@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { reset, runInDurableObject } from "cloudflare:test";
+import { reset, runInDurableObject, abortAllDurableObjects } from "cloudflare:test";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { randomId } from "../src/security";
 import { changeSchema, transform } from "../src/writes";
@@ -67,6 +67,21 @@ describe('management previews and writes',()=>{
   const owner=randomId();const p=await coordinator().prepare(owner,'test',{kind:'metadata',cardId:'owned',title:'New'});failure=problem;
   await reject(coordinator().apply(owner,'test',p.changeId));failure='';
   await reject(coordinator().apply(owner,'test',p.changeId));expect(writes).toBe(1);
+ });
+ it.each(['summary', 'network'])('preserves %s write outcome across restart without repeating POST',async outcome=>{
+  const owner=randomId(),stub=coordinator();
+  const preview=await stub.prepare(owner,'test',{kind:'metadata',cardId:'owned',title:'New'});
+  failure=outcome;
+  let receipt:unknown;
+  if(outcome==='summary') receipt=await stub.apply(owner,'test',preview.changeId);
+  else await reject(stub.apply(owner,'test',preview.changeId));
+  expect(writes).toBe(1);
+  await abortAllDurableObjects();
+  outbound.mockClear();failure='';
+  if(outcome==='summary') expect(await coordinator().apply(owner,'test',preview.changeId)).toEqual(receipt);
+  else await reject(coordinator().apply(owner,'test',preview.changeId));
+  await reject(coordinator().apply(randomId(),'test',preview.changeId));
+  expect(outbound).not.toHaveBeenCalled();expect(writes).toBe(1);
  });
  it('creates a playlist once using a confirmed preview',async()=>{
   const owner=randomId();const p=await coordinator().prepare(owner,'test',{kind:'create',title:'New'});

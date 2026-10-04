@@ -300,6 +300,26 @@ describe("OAuth and MCP boundary", () => {
     expect(outbound).toHaveBeenCalledTimes(2);
   });
 
+  it("reconnects into a fresh grant without reviving the disconnected connection", async () => {
+    const old = await connectedClient(true);
+    await rpc(old.access_token, "tools/call", { name: "disconnect_yoto", arguments: {} });
+    const fresh = await connectedClient(true);
+    expect(fresh.access_token).not.toBe(old.access_token);
+    await abortAllDurableObjects();
+    const oldStatus = await rpc(old.access_token, "tools/call", { name: "connection_status", arguments: {} });
+    expect(JSON.parse(oldStatus.body.result.content[0].text)).toMatchObject({ connected: false, management: { ready: false } });
+    const freshStatus = await rpc(fresh.access_token, "tools/call", { name: "connection_status", arguments: {} });
+    expect(JSON.parse(freshStatus.body.result.content[0].text)).toMatchObject({ connected: true, management: { ready: true } });
+    const denied = await rpc(old.access_token, "tools/call", { name: "list_myo_playlists", arguments: {} });
+    expect(denied.body.result.isError).toBe(true);
+    expect(denied.body.result._meta["mcp/www_authenticate"]).toHaveLength(1);
+    outbound.mockImplementationOnce(async () => Response.json({ cards: [] }));
+    const read = await rpc(fresh.access_token, "tools/call", { name: "list_myo_playlists", arguments: {} });
+    expect(read.body.result.isError).not.toBe(true);
+    expect(JSON.parse(read.body.result.content[0].text)).toEqual({ cards: [] });
+    expect(outbound).toHaveBeenCalledTimes(3); // Two synthetic code exchanges, one read.
+  });
+
   it("reports invalid tools and arguments without upstream requests", async () => {
     const { access_token } = await connectedClient();
     for (const params of [{ name: "unknown_tool", arguments: {} }, { name: "get_myo_playlist", arguments: { cardId: "../private" } }, { name: "get_myo_playlist", arguments: {} }]) {
